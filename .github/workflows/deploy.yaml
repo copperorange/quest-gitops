@@ -1,0 +1,17 @@
+steps:
+  - name: Terraform Apply
+    run: terraform apply -auto-approve
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # Skip secrets manager and inject as env var
+      TF_VAR_secret_word: ${{ secrets.QUEST_SECRET_WORD }}
+  - name: Deploy to ECS
+    # Only run this if the build/push succeeded
+    if: success() 
+    run: |
+      # 1. Force a new deployment (pulls the new image)
+      aws ecs update-service --cluster quest-cluster --service quest-service --force-new-deployment
+      
+      # 2. Wake up the service (Scale from 0 to 1)
+      aws ecs update-service --cluster quest-cluster --service quest-service --desired-count 1
