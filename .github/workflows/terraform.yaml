@@ -74,7 +74,10 @@ jobs:
       # 6. Terraform Plan
       - name: Terraform Plan
         run: |
-          terraform plan -out=tfplan -var='manage_state_bucket=false' -var="app_count=${{ secrets.QUEST_APP_COUNT }}"
+          terraform plan -out=tfplan \
+            -var='manage_state_bucket=false' \
+            -var="app_count=${{ secrets.QUEST_APP_COUNT }}" \
+            -var="secret_word=${{ secrets.QUEST_SECRET_WORD }}"
         id: plan
 
       # 7. Show Plan
