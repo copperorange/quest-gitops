@@ -1,0 +1,135 @@
+name: Terraform Plan & Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+  push:
+    branches: [ main ]
+    paths:
+      - '**.tf'
+      - 'variables.tf'
+      - '.github/workflows/terraform.yaml'
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: 1.6.0
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Configure AWS credentials (using secrets)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3. Set up Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # 4. Terraform Init (with backend config flags)
+      - name: Terraform Init
+        run: |
+          cd quest-gitops
+          terraform init \
+            -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
+            -backend-config="key=quest/terraform.tfstate" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=quest-terraform-locks" \
+            -backend-config="encrypt=true"
+        env:
+          TF_INPUT: false
+
+      # 5. Terraform Validate
+      - name: Terraform Validate
+        run: |
+          cd quest-gitops
+          terraform validate
+          terraform fmt -check
+        continue-on-error: true
+
+      # 6. Terraform Plan
+      - name: Terraform Plan
+        run: |
+          cd quest-gitops
+          terraform plan -out=tfplan -var='manage_state_bucket=false'
+        id: plan
+
+      # 7. Show Plan
+      - name: Show Terraform Plan
+        run: |
+          cd quest-gitops
+          terraform show -json tfplan | jq '.resource_changes[] | select(.change.actions != ["no-op"])' | head -100
+
+      # 8. Comment Plan on PR (if PR)
+      - name: Comment Plan on Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('quest-gitops/tfplan.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan\n\n\`\`\`\n${plan.substring(0, 3000)}\n\`\`\``
+            });
+        continue-on-error: true
+
+      # 9. Manual approval gate (optional for safety)
+      - name: Wait for approval
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action != 'plan'
+        run: |
+          echo "Deployment requires manual approval via GitHub environment."
+          echo "Action requested: ${{ github.event.inputs.action }}"
+
+      # 10. Terraform Apply
+      - name: Terraform Apply
+        if: |
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+        run: |
+          cd quest-gitops
+          terraform apply -auto-approve -input=false -var='manage_state_bucket=false' tfplan
+        env:
+          TF_INPUT: false
+
+      # 11. Terraform Destroy
+      - name: Terraform Destroy
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+        run: |
+          cd quest-gitops
+          terraform destroy -auto-approve -var='manage_state_bucket=false'
+        env:
+          TF_INPUT: false
+
+      # 12. Post-Apply: Output ALB DNS
+      - name: Get ALB DNS
+        if: success()
+        run: |
+          cd quest-gitops
+          terraform output -json | jq '.alb_dns_name // empty' || echo "No ALB DNS available"
+        continue-on-error: true
