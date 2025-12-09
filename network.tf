@@ -93,7 +93,13 @@ resource "aws_security_group" "ecs_tasks" {
     protocol    = "tcp"
     from_port   = 3000
     to_port     = 3000
-    security_groups = [aws_security_group.ecs_tasks.id]
+    # Removed self-reference. Allow all outbound traffic from tasks so they can
+    # reach other services (DNS, ECR, etc.). If you want tighter egress rules,
+    # replace with specific cidr_blocks or security_groups pointing to other SGs.
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
   }
   depends_on = [aws_security_group.alb]
 }
