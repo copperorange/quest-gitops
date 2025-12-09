@@ -9,3 +9,21 @@ variable "app_count" {
   type        = number
   default     = 0 # Start with 0
 }
+
+variable "aws_region" {
+  description = "AWS region to deploy into"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "state_bucket_name" {
+  description = "S3 bucket name for Terraform remote state"
+  type        = string
+  default     = "quest-terraform-state-cbell-0001"
+}
+
+variable "manage_state_bucket" {
+  description = "When true, Terraform will create and manage the S3 state bucket and related resources. Set to false when using an existing bucket/backed by CI."
+  type        = bool
+  default     = true
+}

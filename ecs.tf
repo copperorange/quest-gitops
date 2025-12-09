@@ -98,5 +98,5 @@ resource "aws_ecs_service" "app" {
   }
 
   # Ensure the ALB is ready before creating the service to avoid race conditions
-  depends_on = [aws_lb_listener.https]
+  depends_on = [aws_lb_listener.https, aws_iam_role_policy_attachment.ecs_execution_policy]
 }

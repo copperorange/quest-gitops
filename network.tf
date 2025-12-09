@@ -23,6 +23,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = { Name = "quest-public-${count.index}" }
+  depends_on = [aws_internet_gateway.gw]
 }
 
 # --- Routing ---
@@ -39,6 +40,7 @@ resource "aws_route_table_association" "public" {
   count          = 2
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
+  depends_on = [aws_subnet.public]
 }
 
 # --- Security Groups ---
@@ -92,4 +94,5 @@ resource "aws_security_group" "ecs_tasks" {
     to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
   }
+  depends_on = [aws_security_group.alb]
 }
