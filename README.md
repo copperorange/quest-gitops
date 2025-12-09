@@ -13,7 +13,8 @@ How to trigger
 Basic things to know
 - Set these GitHub secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `TERRAFORM_STATE_BUCKET`.
 - The workflow passes the bucket name to `terraform init` via `-backend-config`.
-- Create S3 bucket + DynamoDB lock table once (see `backend.hcl.example`).
+ - Create S3 bucket once (see `backend.hcl.example`). If you want state locking in
+       production, create a DynamoDB lock table and add `dynamodb_table` to your backend config.
 - For local runs use `terraform init -backend-config=backend.hcl` and pass `-var='manage_state_bucket=false'`.
 
 That's it — the GitHub Actions runner runs `terraform apply` against your AWS account using the repo's code and the provided secrets.
@@ -41,7 +42,7 @@ GitHub Actions Runner
         ↓
   AWS Resources (VPC, ALB, ECS, ECR)
         ↓
-  Terraform State → S3 (with DynamoDB locking)
+      Terraform State → S3 (optional: DynamoDB locking)
 ```
 
 ## Cost Estimation

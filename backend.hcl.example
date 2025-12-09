@@ -6,14 +6,14 @@
 #
 # Or supply each value individually:
 #   terraform init \
-#     -backend-config="bucket=quest-terraform-state-yourusername-0001" \
+#     -backend-config="bucket=quest-terraform-state-cbell-0001" \
 #     -backend-config="key=quest/terraform.tfstate" \
 #     -backend-config="region=us-east-1" \
-#     -backend-config="dynamodb_table=quest-terraform-locks" \
 #     -backend-config="encrypt=true"
 
-bucket         = "quest-terraform-state-yourusername-0001"
+bucket         = "quest-terraform-state-cbell-0001"
 key            = "quest/terraform.tfstate"
 region         = "us-east-1"
 encrypt        = true
-dynamodb_table = "quest-terraform-locks"
+# If you want locking, set `dynamodb_table` manually and create the table.
+# dynamodb_table = "quest-terraform-locks"

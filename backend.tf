@@ -4,11 +4,13 @@
 
 terraform {
   backend "s3" {
-    # bucket, key, region, encrypt, and dynamodb_table are supplied via:
+    # bucket, key, and region are supplied via -backend-config flags in terraform init.
+    # DynamoDB state locking is optional — if you want locking, pass
+    # -backend-config="dynamodb_table=YOUR_LOCK_TABLE" and create the table first.
+    # Example:
     # terraform init -backend-config=bucket=$BACKEND_BUCKET \
     #                -backend-config=key=quest/terraform.tfstate \
     #                -backend-config=region=us-east-1 \
-    #                -backend-config=dynamodb_table=$LOCK_TABLE \
     #                -backend-config=encrypt=true
   }
 }
