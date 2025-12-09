@@ -30,6 +30,11 @@ resource "aws_cloudwatch_log_group" "quest_logs" {
 # The logical grouping for your services
 resource "aws_ecs_cluster" "main" {
   name = "quest-cluster"
+  
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
 }
 
 # --- 4. Task Definition (The Blueprint) ---

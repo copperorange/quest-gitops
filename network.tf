@@ -89,10 +89,11 @@ resource "aws_security_group" "ecs_tasks" {
   }
 
   egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow outbound to ECS tasks only"
+    protocol    = "tcp"
+    from_port   = 3000
+    to_port     = 3000
+    security_groups = [aws_security_group.ecs_tasks.id]
   }
   depends_on = [aws_security_group.alb]
 }
