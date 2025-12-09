@@ -74,7 +74,7 @@ jobs:
       # 6. Terraform Plan
       - name: Terraform Plan
         run: |
-          terraform plan -out=tfplan -var='manage_state_bucket=false'
+          terraform plan -out=tfplan -var='manage_state_bucket=false' -var="app_count=${{ secrets.QUEST_APP_COUNT }}"
         id: plan
 
       # 7. Show Plan
@@ -123,9 +123,9 @@ jobs:
         env:
           TF_INPUT: false
 
-      # 12. Post-Apply: Output ALB DNS
       - name: Get ALB DNS
         if: success()
         run: |
-          terraform output -json | jq '.alb_dns_name // empty' || echo "No ALB DNS available"
+          terraform output -json > outputs.json || echo "No outputs available"
+          jq -r '.alb_dns_name.value // "No ALB DNS available"' outputs.json 2>/dev/null || echo "No ALB DNS available"
         continue-on-error: true
