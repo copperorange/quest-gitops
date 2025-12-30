@@ -73,6 +73,7 @@ jobs:
 
       # 6. Terraform Plan
       - name: Terraform Plan
+        if: github.event_name == 'push' || github.event.inputs.action != 'destroy'
         run: |
           terraform plan -out=tfplan \
             -var='manage_state_bucket=false' \
@@ -82,6 +83,7 @@ jobs:
 
       # 7. Show Plan
       - name: Show Terraform Plan
+        if: github.event_name == 'push' || github.event.inputs.action != 'destroy'
         run: |
           terraform show -json tfplan | jq '.resource_changes[] | select(.change.actions != ["no-op"])' | head -100
 
